@@ -1,8 +1,11 @@
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open('hsm-v1').then(c => c.addAll([
-      '/', '/index.html', '/heart.png', '/heart_maister.png',
-      '/stethoscope.png'
+      '/heart_sound_meister/',
+      '/heart_sound_meister/index.html',
+      '/heart_sound_meister/heart.png',
+      '/heart_sound_meister/heart_maister.png',
+      '/heart_sound_meister/stethoscope.png'
     ]))
   );
 });
