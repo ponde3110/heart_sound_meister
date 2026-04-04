@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Heart Sound Meister</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="manifest" href="manifest.json">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
 
@@ -2216,9 +2217,7 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 });
-</script>
-<link rel="manifest" href="manifest.json">
-<script>
+
   if ('serviceWorker' in navigator)
     navigator.serviceWorker.register('./sw.js');
 </script>
