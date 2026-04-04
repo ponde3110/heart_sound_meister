@@ -76,14 +76,16 @@ self.addEventListener("fetch", event => {
 
       return fetch(event.request)
         .then(res => {
-          // 動的キャッシュ
+          // 206（部分レスポンス）はキャッシュしない
+          if (!res || res.status === 206 || res.status === 0) {
+            return res;
+          }
           return caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, res.clone());
             return res;
           });
         })
         .catch(() => {
-          // オフライン時 fallback
           return caches.match(BASE_PATH + "index.html");
         });
     })
