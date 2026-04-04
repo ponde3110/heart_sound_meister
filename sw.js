@@ -3,9 +3,9 @@ self.addEventListener('install', e => {
     caches.open('hsm-v1').then(c => c.addAll([
       '/heart_sound_meister/',
       '/heart_sound_meister/index.html',
-      '/heart_sound_meister/heart.png',
-      '/heart_sound_meister/heart_maister.png',
-      '/heart_sound_meister/stethoscope.png'
+      '/heart_sound_meister/manifest.json',
+      '/heart_sound_meister/icon-192.png',
+      '/heart_sound_meister/icon-512.png'
     ]))
   );
 });
