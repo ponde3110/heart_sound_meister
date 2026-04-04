@@ -1,8 +1,5 @@
-const CACHE_NAME = "hsm-v2";
-
-// 必ずあなたの公開パスに合わせる
-const BASE_PATH = "/"; 
-// 例：GitHub Pagesなら "/heart_sound_meister/"
+const CACHE_NAME = "hsm-v3";
+const BASE_PATH = "/heart_sound_meister/";
 
 const urlsToCache = [
   BASE_PATH,
@@ -18,7 +15,7 @@ const urlsToCache = [
   BASE_PATH + "heart_maister.png",
   BASE_PATH + "stethoscope.png",
 
-  // sounds（必要に応じて全部追加）
+  // sounds（必要なもの全部）
   BASE_PATH + "S3.mp3",
   BASE_PATH + "S4.mp3",
   BASE_PATH + "apex.mp3",
@@ -40,7 +37,7 @@ const urlsToCache = [
 
 
 // ========================
-// INSTALL（キャッシュ保存）
+// install
 // ========================
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -48,44 +45,38 @@ self.addEventListener("install", event => {
       return cache.addAll(urlsToCache);
     })
   );
-
-  // 即時有効化
   self.skipWaiting();
 });
 
 
 // ========================
-// ACTIVATE（古いキャッシュ削除）
+// activate
 // ========================
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
+    caches.keys().then(keys =>
+      Promise.all(
         keys
           .filter(key => key !== CACHE_NAME)
           .map(key => caches.delete(key))
-      );
-    })
+      )
+    )
   );
-
   self.clients.claim();
 });
 
 
 // ========================
-// FETCH（通信制御）
+// fetch
 // ========================
 self.addEventListener("fetch", event => {
   event.respondWith(
     caches.match(event.request).then(response => {
-
-      // キャッシュあればそれ返す
       if (response) return response;
 
-      // なければネット
       return fetch(event.request)
         .then(res => {
-          // 動的キャッシュ（画像など）
+          // 動的キャッシュ
           return caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, res.clone());
             return res;
