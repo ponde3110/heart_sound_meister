@@ -2,7 +2,7 @@
   "name": "Heart Sound Meister",
   "short_name": "HeartMeister",
   "description": "Heart sound diagnosis training game",
-  "start_url": "/",
+  "start_url": "/heart_sound_meister/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#7cf7ff",
