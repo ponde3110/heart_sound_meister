@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Heart Sound Meister</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
+
+  :root {
+    --panel-bg: linear-gradient(180deg, rgba(12,22,46,0.82), rgba(10,10,18,0.78));
+    --panel-border: rgba(255,255,255,0.16);
+    --accent-a: #7cf7ff;
+    --accent-b: #5d8bff;
+    --accent-c: #d94dff;
+    --gold: #ffd76b;
+    --danger: #ff7a9f;
+  }
+
+  body {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+  #gameWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    background: transparent;
+    border-radius: 24px;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.06),
+      0 25px 90px rgba(0,0,0,0.55),
+      0 0 60px rgba(0,160,255,0.08);
+  }
+
+  button:focus {
+  outline: none;
+}
+
+  .hud-panel {
+  position: absolute;
+  z-index: 15;
+  min-width: 140px;
+  padding: 0;
+  border-radius: 0;
+
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+
+  color: #fff;
+}
+
+/* Common */
+.hud-panel .label,
+.hud-panel .value,
+.hud-panel .sub {
+  display: block;
+  text-shadow: 0 0 8px rgba(0,0,0,0.8);
+}
+
+/* Individual */
+.hud-panel .label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.68);
+}
+
+.hud-panel .value {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.05;
+  color: #fff;
+  text-shadow: 0 0 14px rgba(124,247,255,0.2); /* override */
+}
+
+.hud-panel .sub {
+  margin-top: 3px;
+  font-size: 12px;
+  min-height: 1em;
+}
+
+  #beatToggle {
+    top: 12px;
+    left: 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #beatToggle .value {
+    font-size: 20px;
+  }
+
+  #beatToggle .sub {
+    color: rgba(124,247,255,0.82);
+  }
+
+  #beatToggle.on {
+    box-shadow:
+      0 14px 34px rgba(0,0,0,0.32),
+      0 0 28px rgba(124,247,255,0.12);
+  }
+
+  #beatToggle.off {
+    border-color: rgba(255,150,170,0.24);
+  }
+
+  #beatToggle.off .value {
+    color: #ffd7df;
+    text-shadow: 0 0 14px rgba(255,110,160,0.18);
+  }
+
+  #beatToggle.off .sub {
+    color: rgba(255,150,180,0.78);
+  }
+
+  #beatToggle:active {
+    transform: scale(0.98);
+  }
+
+  #hudScore {
+    top: 12px;
+    right: 12px;
+    text-align: right;
+    pointer-events: none;
+  }
+
+  #hudScore .sub {
+    color: var(--gold);
+  }
+
+  #controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px 20px;
+    background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.62));
+    gap: 12px;
+    z-index: 12;
+  }
+
+  .ctrl-btn {
+    flex: 1;
+    height: 60px;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 18px;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 26px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    backdrop-filter: blur(8px);
+  }
+
+  .ctrl-btn:active {
+    background: rgba(255,255,255,0.22);
+  }
+
+  #fireBtn {
+    flex: 1.4;
+    height: 60px;
+    border: 1px solid rgba(124,247,255,0.34);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(124,247,255,0.24), rgba(93,139,255,0.18));
+    color: white;
+    font-size: 20px;
+    font-weight: bolder;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 28px rgba(36,92,255,0.16);
+    font-family: inherit;
+    letter-spacing: 0.12em;
+  }
+
+  #fireBtn:active {
+    background: rgba(93,139,255,0.45);
+  }
+
+  #startOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+    radial-gradient(circle at center, rgba(7, 16, 38, 0.08), rgba(0,0,0,0.42));
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+  }
+
+  #startOverlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .start-panel {
+  width: min(92vw, 420px);
+  padding: 26px 24px 24px;
+  border-radius: 28px;
+  color: #fff;
+  text-align: center;
+
+  background: rgba(10, 18, 36, 0.42);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+
+  box-shadow:
+    0 18px 60px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+  .start-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(124,247,255,0.10);
+    border: 1px solid rgba(124,247,255,0.24);
+    color: var(--accent-a);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+
+  #startHeading {
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  background: linear-gradient(135deg, var(--accent-a) 0%, #fff 50%, var(--accent-b) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 10px rgba(124,247,255,0.45));
+  text-transform: uppercase;
+}
+
+  #startSub {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.82);
+  }
+
+  #overlayScore {
+    display: none;
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gold);
+  }
+
+  #controlGuide {
+  margin: 18px auto 0 auto;
+  width: fit-content;
+  max-width: 90%;
+
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.guide-list {
+  margin: 0 auto;
+  padding-left: 0.8em;
+  text-align: left;
+  line-height: 1.9;
+  font-size: 14px;
+  width: fit-content;
+}
+
+.guide-list li {
+  margin: 4px 0;
+}
+
+  #controlGuide h2 {
+    font-size: 13px;
+    color: rgba(255,255,255,0.70);
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+
+  .guide-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 14px;
+  width: 100%;
+}
+
+.guide-key {
+  text-align: left;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.guide-value {
+  text-align: right;
+  color: rgba(255,255,255,0.76);
+  flex: 1;
+}
+
+  .guide-row:last-child { border-bottom: none; }
+
+  .guide-key {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .guide-value {
+    color: rgba(255,255,255,0.76);
+    text-align: center;
+  }
+
+  .overlay-footer {
+    margin-top: 18px;
+    text-align: center;
+  }
+
+  .overlay-copyright {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.72);
+    letter-spacing: 0.08em;
+  }
+
+  .overlay-disclaimer {
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    transform: translateX(-50%);
+    width: min(94vw, 900px);
+    padding: 0 10px;
+    font-size: 8px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.52);
+    text-align: left;
+    z-index: 21;
+  }
+
+  #startBtn {
+    position: relative;
+    isolation: isolate;
+    margin-top: 20px;
+    min-width: 220px;
+    padding: 16px 28px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.22);
+    color: white;
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b) 56%, var(--accent-c));
+    box-shadow:
+      0 18px 34px rgba(34, 87, 255, 0.28),
+      0 0 28px rgba(124,247,255,0.24);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  }
+
+  #startBtn::before {
+    content: "";
+    position: absolute;
+    top: -120%;
+    left: -35%;
+    width: 40%;
+    height: 320%;
+    transform: rotate(24deg);
+    background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
+    opacity: 0.7;
+    animation: shine 2.8s linear infinite;
+    z-index: -1;
+  }
+
+  #startBtn:hover { transform: translateY(-2px) scale(1.01); filter: brightness(1.04); }
+  #startBtn:active { transform: translateY(1px) scale(0.99); box-shadow: 0 12px 20px rgba(34, 87, 255, 0.25); }
+
+  @keyframes shine {
+    from { left: -35%; }
+    to { left: 120%; }
+  }
+
+  #practiceBtn {
+  display: none;
+  margin: 8px auto 0;
+  padding: 9px 24px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  border-radius: 999px;
+  border: 1px solid rgba(255,180,100,0.38);
+  color: rgba(255,210,130,0.95);
+  background: rgba(255,160,60,0.10);
+  box-shadow: 0 6px 16px rgba(255,140,40,0.10);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  width: fit-content;
+  transition: opacity 0.18s ease, background 0.18s ease;
+}
+
+  #practiceBtn:hover { background: rgba(255,160,60,0.22); }
+  #practiceBtn:active { opacity: 0.8; }
+
+  #practiceModeBar {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 7px 22px;
+    background: rgba(255,160,60,0.15);
+    border: 1px solid rgba(255,180,80,0.30);
+    border-radius: 999px;
+    color: rgba(255,220,140,0.95);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-align: center;
+    z-index: 30;
+    display: none;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: background 0.18s ease;
+  }
+
+  #practiceModeBar:hover { background: rgba(255,160,60,0.28); }
+
+  #practiceRetryBtn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -200px);
+    z-index: 25;
+    padding: 14px 36px;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.22);
+    color: white;
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b) 56%, var(--accent-c));
+    box-shadow: 0 14px 28px rgba(34,87,255,0.28), 0 0 20px rgba(124,247,255,0.20);
+    cursor: pointer;
+    font-family: inherit;
+    display: none;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  #practiceRetryBtn:hover { transform: translate(-50%, -202px) scale(1.02); }
+  #practiceRetryBtn:active { transform: translate(-50%, -198px) scale(0.98); }
+
+  @media (max-width: 640px) {
+    .start-panel { padding: 22px 18px 20px; border-radius: 24px; }
+    #startBtn { min-width: 100%; }
+    #hudScore { top: 10px; right: 10px; padding: 9px 12px; }
+    #beatToggle { top: 10px; left: 10px; padding: 9px 12px; min-width: 124px; }
+    .overlay-disclaimer {
+      width: calc(100vw - 18px);
+      bottom: 8px;
+      font-size: 7px;
+      line-height: 1.45;
+    }
+  }
+  
+  #overlayHeart {
+  width: 90px;
+  display: block;
+  margin: 0 auto 14px auto;
+}
+
+#overlaySteth {
+  width: 70px;
+  display: block;
+  margin: 16px auto 12px auto;
+  opacity: 0.95;
+}
+#overlayHeartBg {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  opacity: 0.45;
+  z-index: 19;
+  pointer-events: none;
+}
+
+#overlayStethBg {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  opacity: 0.35;
+  z-index: 19;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="gameWrapper">
+  <canvas id="game"></canvas>
+
+  <button id="beatToggle" class="hud-panel on">
+    <span class="label">BEAT</span>
+    <span class="value">ON</span>
+    <span class="sub"></span>
+  </button>
+
+  <div id="hudScore" class="hud-panel" aria-live="polite">
+    <span class="label">SCORE</span>
+    <span class="value" id="scoreValue">0</span>
+  </div>
+
+<div id="startOverlay">
+
+  <div class="start-panel">
+    <h1 id="startHeading">Heart Sound Meister</h1>
+    <p id="startSub"></p>
+    <div id="overlayScore"></div>
+
+    <div id="controlGuide"></div>
+
+    <div style="display:flex; flex-direction:column; align-items:center; gap:0;">
+      <button id="startBtn">START</button>
+      <button id="practiceBtn">Practice Mode</button>
+    </div>
+
+    <div class="overlay-footer">
+      <div class="overlay-copyright">©2026 ponde3110</div>
+    </div>
+  </div>
+
+  <div class="overlay-disclaimer">Heart sound interpretation is not always definitive. We assume no liability for any damages arising from information provided in this application. All audio clips are recordings of actual heart sounds. All content in this application is protected by copyright law.</div>
+  </div>
+
+  <div id="controls">
+    <button class="ctrl-btn" id="leftBtn">◀</button>
+    <button id="fireBtn">DIAGNOSE</button>
+    <button class="ctrl-btn" id="rightBtn">▶</button>
+  </div>
+
+  <button id="practiceModeBar">Exit Practice Mode</button>
+  <button id="practiceRetryBtn">RETRY</button>
+</div>
+
+<script>
+const GAME_W = 400, GAME_H = 600;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const controls = document.getElementById("controls");
+const beatBtn = document.getElementById("beatToggle");
+const startBtn = document.getElementById("startBtn");
+const startOverlay = document.getElementById("startOverlay");
+const startHeading = document.getElementById("startHeading");
+const startSub = document.getElementById("startSub");
+const controlGuide = document.getElementById("controlGuide");
+const overlayScore = document.getElementById("overlayScore");
+const scoreValue = document.getElementById("scoreValue");
+const scoreRank = document.getElementById("scoreRank");
+const rotateGuideKey = document.getElementById("rotateGuideKey");
+const rotateGuideValue = document.getElementById("rotateGuideValue");
+const fireGuideKey = document.getElementById("fireGuideKey");
+const fireGuideValue = document.getElementById("fireGuideValue");
+
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ("ontouchstart" in window);
+
+let practiceMode = false;
+let practiceAllIndex = 0; // index for all-questions sequential mode
+const practiceModeBar = document.getElementById("practiceModeBar");
+const practiceRetryBtn = document.getElementById("practiceRetryBtn");
+const practiceBtn = document.getElementById("practiceBtn");
+
+function resizeCanvas() {
+  const ch = isMobile && gameStarted ? 90 : 0;
+  const scale = Math.min(window.innerWidth / GAME_W, (window.innerHeight - ch) / GAME_H);
+  canvas.width = GAME_W;
+  canvas.height = GAME_H;
+  canvas.style.width = (GAME_W * scale) + "px";
+  canvas.style.height = (GAME_H * scale) + "px";
+  if (stars.length) initStars();
+}
+window.addEventListener("resize", resizeCanvas);
+
+const bgm = new Audio("S4.mp3");
+bgm.loop = true;
+bgm.volume = 0.8;
+
+// Explosion sound on game over
+let audioCtx = null;
+
+// difficulty: 1=Beginner, 2=Intermediate, 3=Advanced
+const BLOCK_TYPES = [
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Gallop"], correct:"Normal",    sound:"apex.mp3", difficulty:1 },
+{ labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Gallop"], correct:"Normal",    sound:"base.mp3", difficulty:1 },
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Gallop"], correct:"S4 (Fourth Sound)", sound:"S4.mp3",     difficulty:1 },
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Gallop"], correct:"S3 (Third Sound)", sound:"S3.mp3",     difficulty:1 },
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Gallop"], correct:"Gallop", sound:"gallop.mp3", difficulty:1 },
+  { labels:["Ejection Murmur (Mid-Systolic)","Regurgitant Murmur (Holosystolic)","Diastolic Murmur","To-and-Fro Murmur"], correct:"Ejection Murmur (Mid-Systolic)",   sound:"SEM.mp3",    difficulty:1 },
+  { labels:["Ejection Murmur (Mid-Systolic)","Regurgitant Murmur (Holosystolic)","Diastolic Murmur","To-and-Fro Murmur"], correct:"Regurgitant Murmur (Holosystolic)", sound:"HSM.mp3",    difficulty:1},
+  { labels:["Ejection Murmur (Mid-Systolic)","Regurgitant Murmur (Holosystolic)","Diastolic Murmur","To-and-Fro Murmur"], correct:"Diastolic Murmur", sound:"HDM.mp3",    difficulty:1},
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Normal","Midsystolic Click"],  correct:"Midsystolic Click",  sound:"click.mp3",  difficulty:2 },
+  { labels:["To-and-Fro Murmur","Pericardial Friction Rub","Continuous Murmur","Gallop"],     correct:"Pericardial Friction Rub",     sound:"rub.mp3",    difficulty:2 },
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Midsystolic Click","Accentuated P2"], correct:"Accentuated P2", sound:"2P.mp3", difficulty:2 },
+  { labels:["Systolic Murmur","Diastolic Murmur","To-and-Fro Murmur","Continuous Murmur"],     correct:"To-and-Fro Murmur",       sound:"TAF.mp3",    difficulty:2 },
+  { labels:["Systolic Murmur","Diastolic Murmur","To-and-Fro Murmur","Continuous Murmur"],     correct:"Continuous Murmur",     sound:"CM.mp3",     difficulty:3 },
+  { labels:["Ejection Murmur (Mid-Systolic)","Regurgitant Murmur (Holosystolic)","Regurgitant Murmur (Early-Systolic)","Regurgitant Murmur (Late-Systolic)"], correct:"Regurgitant Murmur (Late-Systolic)",       sound:"LSM.mp3",    difficulty:3 },
+  { labels:["Ejection Murmur (Mid-Systolic)","Regurgitant Murmur (Holosystolic)","Regurgitant Murmur (Early-Systolic)","Regurgitant Murmur (Late-Systolic)"], correct:"Regurgitant Murmur (Early-Systolic)",       sound:"ESM.mp3",    difficulty:3 },
+  { labels:["Diastolic Rumble","Pericardial Friction Rub","Continuous Murmur","Gallop"],     correct:"Diastolic Rumble",       sound:"rumble.mp3", difficulty:3 },
+  { labels:["S3 (Third Sound)","S4 (Fourth Sound)","Midsystolic Click","Ejection Sound"], correct:"Ejection Sound",   sound:"ej.mp3",     difficulty:3 },
+  { labels:["Normal (Base)","Normal (Apex)","S3 (Third Sound)","S4 (Fourth Sound)"],     correct:"Normal (Apex)",       sound:"apex.mp3", difficulty:3 },
+  { labels:["Normal (Base)","Normal (Apex)","S3 (Third Sound)","S4 (Fourth Sound)"],     correct:"Normal (Base)",       sound:"base.mp3", difficulty:3 }
+];
+
+// Filter questions based on current difficulty
+function getAllowedTypes() {
+  if (score >= 25) return BLOCK_TYPES; // Advanced: all questions
+  if (score >= 10) return BLOCK_TYPES.filter(t => t.difficulty <= 2); // Intermediate: beginner + intermediate
+  return BLOCK_TYPES.filter(t => t.difficulty === 1); // Beginner only
+}
+
+const heartImg = new Image();
+const heartMaisterImg = new Image();
+const stethImg = new Image();
+let heartLoaded = false;
+let heartMaisterLoaded = false;
+let stethLoaded = false;
+heartImg.onload = () => { heartLoaded = true; };
+heartMaisterImg.onload = () => { heartMaisterLoaded = true; };
+stethImg.onload = () => { stethLoaded = true; };
+heartImg.onerror = () => { heartLoaded = false; };
+heartMaisterImg.onerror = () => { heartMaisterLoaded = false; };
+stethImg.onerror = () => { stethLoaded = false; };
+heartImg.src = "heart.png";
+heartMaisterImg.src = "heart_maister.png";
+stethImg.src = "stethoscope.png";
+// iOS cache fix: set flag if already loaded
+if (heartImg.complete && heartImg.naturalWidth > 0) heartLoaded = true;
+if (heartMaisterImg.complete && heartMaisterImg.naturalWidth > 0) heartMaisterLoaded = true;
+if (stethImg.complete && stethImg.naturalWidth > 0) stethLoaded = true;
+
+// Meister achievement flag (persisted in localStorage)
+let isMaister = localStorage.getItem("heartSoundMaister") === "true";
+
+let score = 0;
+let savedScore = 0;
+let savedLevelText = "Beginner";
+let block;
+let diagnostics = [];
+let particles = [];
+let successBursts = [];
+let player = { x: 200, y: 550, shootScale: 1, shootAnim: null };
+const GAME_OVER_LINE_Y = 492;
+const STAR_COUNT = 84;
+const STAR_DEPTH = 26;
+let stars = [];
+let gameOver = false;
+let beatTick = 0;
+let labelAngle = 0;
+let labelAngleTo = 0;
+let beatEnabled = true;
+let lastType = null;
+let levelText = "";
+let gameStarted = false;
+let dangerLinePhase = 0;
+let fadeOutTimer = null;
+
+// AudioContext for getting current audio time
+let audioContext = null;
+let audioStartTime = 0;
+
+function getAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioContext;
+}
+
+function updateControlsGuide() {
+  const guide = document.getElementById("controlGuide");
+  if (!guide) return;
+  const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ("ontouchstart" in window);
+  const items = mobile
+    ? [
+        "Listen to heart sounds",
+        "Swipe to choose answers",
+        "Tap center to diagnose",
+        "Get 50 to earn Meister"
+      ]
+    : [
+        "Listen to heart sounds",
+        "Use arrows to choose",
+        "Press Space to diagnose",
+        "Get 50 to earn Meister"
+      ];
+
+  guide.innerHTML = `
+    <ul class="guide-list">
+      ${items.map(item => `<li>${item}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function resetStar(star, initial = false) {
+  star.x = Math.random() * canvas.width;
+  star.y = initial ? Math.random() * canvas.height : -10;
+  star.z = Math.random() * STAR_DEPTH + 1;
+  star.baseSize = 0.3 + Math.random() * 0.8;
+  star.speed = 0.02 + (STAR_DEPTH - star.z) * 0.03;
+  star.alpha = 0.2 + (STAR_DEPTH - star.z) * 0.03;
+}
+
+function initStars() {
+  stars = Array.from({ length: STAR_COUNT }, () => ({}));
+  stars.forEach(star => resetStar(star, true));
+}
+
+function updateStars() {
+  for (const star of stars) {
+    star.y += star.speed + score * 0.002;
+    if (star.y > canvas.height + 10) {
+      resetStar(star, false);
+    }
+  }
+}
+
+function drawSpaceBackground() {
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, '#040914');
+  bg.addColorStop(0.45, '#070e1f');
+  bg.addColorStop(1, '#02040b');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  for (const star of stars) {
+    ctx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.baseSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function updateLevel() {
+  if (score >= 50) levelText = "Meister"; // threshold for final screen rank
+  else if (score >= 35) levelText = "Advanced";
+  else if (score >= 10) levelText = "Intermediate";
+  else levelText = "Beginner";
+}
+
+function updateScoreHUD() {
+  scoreValue.textContent = String(score);
+}
+
+function updateBeatBtn() {
+  beatBtn.classList.toggle("on", beatEnabled);
+  beatBtn.classList.toggle("off", !beatEnabled);
+  beatBtn.innerHTML = `
+    <span class="label">HEARTBEAT</span>
+    <span class="value">${beatEnabled ? "ON" : "OFF"}</span>
+  `;
+}
+
+function updateControlButtons() {
+  const show = isMobile && gameStarted;
+  controls.style.display = show ? "flex" : "none";
+  if (show) {
+    // Force reflow to trigger iOS rendering
+    void controls.offsetHeight;
+    controls.style.opacity = "0.99";
+    requestAnimationFrame(() => { controls.style.opacity = "1"; });
+  }
+}
+
+function showStartOverlay(mode = "start") {
+  startOverlay.classList.remove("hidden");
+  if (mode === "start") {
+    startHeading.textContent = "Heart Sound Meister";
+    startSub.textContent = "";
+    if (isMaister) {
+  overlayScore.style.display = "none";
+} else {
+  overlayScore.style.display = "none";
+}
+    controlGuide.style.display = "block";
+    startBtn.textContent = "START";
+    practiceBtn.style.display = "none";
+  } else {
+    const displayScore = practiceMode ? savedScore : score;
+    const displayLevel = practiceMode ? savedLevelText : levelText;
+    startHeading.textContent = displayScore >= 50 ? "🏆 Perfect Clear! 🏆" : "GAME OVER";
+    startSub.textContent = "";
+    overlayScore.style.display = "block";
+    overlayScore.textContent = `Rank: ${displayLevel}`;
+    controlGuide.style.display = "none";
+    startBtn.textContent = "RETRY";
+    practiceBtn.style.display = "block";
+  }
+}
+
+function hideStartOverlay() {
+  startOverlay.classList.add("hidden");
+}
+
+function resetGameState() {
+  score = 0;
+  diagnostics = [];
+  particles = [];
+  successBursts = [];
+  gameOver = false;
+  beatTick = 0;
+  player.shootScale = 1;
+  player.shootAnim = null;
+  updateLevel();
+  updateScoreHUD();
+}
+
+function startGame() {
+  practiceMode = false;
+  practiceModeBar.style.display = "none";
+  practiceRetryBtn.style.display = "none";
+  practiceBtn.style.display = "none";
+  document.getElementById("hudScore").style.display = "";
+  resetGameState();
+
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = 0.8;
+
+  gameStarted = true;
+  hideStartOverlay();
+  resizeCanvas();
+  // Show buttons after iOS Safari layout recalculation
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      updateControlButtons();
+    });
+  });
+
+  spawnBlock(true);
+}
+
+function startPracticeMode() {
+  practiceMode = true;
+  practiceAllIndex = 0;
+  resetGameState();
+
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = 0.8;
+
+  gameStarted = true;
+  hideStartOverlay();
+
+  // Hide score HUD
+  document.getElementById("hudScore").style.display = "none";
+  practiceBtn.style.display = "none";
+  practiceModeBar.style.display = "block";
+  // practiceRetryBtn.style.display = "block";
+
+  resizeCanvas();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      updateControlButtons();
+    });
+  });
+
+  spawnBlock(true);
+}
+
+function playGameOverSound() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(
+    80,
+    audioCtx.currentTime + 1.2
+  );
+
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioCtx.currentTime + 1.2
+  );
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.2);
+}
+
+startBtn.addEventListener("click", startGame);
+practiceBtn.addEventListener("click", startPracticeMode);
+practiceRetryBtn.addEventListener("click", () => {
+  startGame();
+});
+practiceModeBar.addEventListener("click", () => {
+  // Exit practice mode → show game over screen
+  practiceModeBar.style.display = "none";
+  practiceRetryBtn.style.display = "none";
+  document.getElementById("hudScore").style.display = "";
+  // Restore score to value at game end
+  score = savedScore;
+  levelText = savedLevelText;
+  updateScoreHUD();
+  gameOver = true;
+  gameStarted = false;
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = 0.8;
+  spawnBlock(false);
+  updateControlButtons();
+  showStartOverlay("retry"); // Call with practiceMode=true to use saved values
+  practiceMode = false;
+});
+beatBtn.addEventListener("click", () => {
+  beatEnabled = !beatEnabled;
+  updateBeatBtn();
+});
+
+// Explosion sound effect (on game over / dying state start)
+function playExplosionSound() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+
+  const now = audioCtx.currentTime;
+
+  // Noise burst (explosion feel)
+  const bufferSize = audioCtx.sampleRate * 0.6;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+  }
+  const noiseSource = audioCtx.createBufferSource();
+  noiseSource.buffer = buffer;
+  const noiseGain = audioCtx.createGain();
+  noiseGain.gain.setValueAtTime(0.55, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(600, now);
+  filter.frequency.exponentialRampToValueAtTime(80, now + 0.5);
+  noiseSource.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(audioCtx.destination);
+  noiseSource.start(now);
+
+  // Deep thud oscillator
+  const osc = audioCtx.createOscillator();
+  const oscGain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(180, now);
+  osc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+  oscGain.gain.setValueAtTime(0.4, now);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+  osc.connect(oscGain);
+  oscGain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.5);
+}
+// Allow toggle via touch on start/game-over screen too
+beatBtn.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  beatEnabled = !beatEnabled;
+  updateBeatBtn();
+}, { passive: false });
+
+function spawnBlock(playAudio = true) {
+  let type;
+  if (practiceMode) {
+    practiceAllIndex = practiceAllIndex % BLOCK_TYPES.length;
+    type = BLOCK_TYPES[practiceAllIndex];
+    practiceAllIndex++;
+  } else {
+    const pool = getAllowedTypes();
+    do {
+      type = pool[Math.floor(Math.random() * pool.length)];
+    } while (type === lastType && pool.length > 1);
+  }
+
+  lastType = type;
+  const ai = Math.floor(Math.random() * 4);
+  block = {
+    x: 200,
+    y: 80,
+    baseY: 80,
+    maxY: 80,
+    size: 80,
+    angleIndex: ai,
+    speed: 0.25,
+    type,
+    state: "idle",
+    hitFrame: 0,
+    fuseX: 0,
+    fuseY: 0,
+    glow: 0,
+    // For game over animation
+    dyingFrame: 0,
+    dyingMaxFrames: 120,
+    dyingScale: 1,
+    dyingAlpha: 1,
+    // For wrong answer reaction
+    wrongFrame: 0,
+    wrongMaxFrames: 0,
+    wrongShake: 0
+  };
+  labelAngle = labelAngleTo = ai * Math.PI / 2;
+
+  if (bgm.src !== new URL(type.sound, location.href).href) bgm.src = type.sound;
+  if (playAudio) {
+    bgm.play().catch(() => {});
+  } else {
+    bgm.pause();
+    bgm.currentTime = 0;
+  }
+}
+
+function nextBlockType(playAudio = true) {
+  let type;
+  if (practiceMode) {
+    practiceAllIndex = practiceAllIndex % BLOCK_TYPES.length;
+    type = BLOCK_TYPES[practiceAllIndex];
+    practiceAllIndex++;
+  } else {
+    const pool = getAllowedTypes();
+    do {
+      type = pool[Math.floor(Math.random() * pool.length)];
+    } while (type === lastType && pool.length > 1);
+  }
+
+  lastType = type;
+  block.type = type;
+  block.state = "idle";
+  block.hitFrame = 0;
+  block.glow = 0;
+  block.dyingFrame = 0;
+  block.dyingScale = 1;
+  block.dyingAlpha = 1;
+  block.wrongFrame = 0;
+  block.wrongMaxFrames = 0;
+  block.wrongShake = 0;
+
+  const ni = Math.floor(Math.random() * 4);
+  block.angleIndex = ni;
+  labelAngle = labelAngleTo = ni * Math.PI / 2;
+
+  if (bgm.src !== new URL(type.sound, location.href).href) bgm.src = type.sound;
+  if (playAudio) bgm.play().catch(() => {});
+}
+
+// ===== Meister Celebration Animation =====
+let maisterAnim = null; // null or { frame, maxFrames }
+
+function startMaisterCelebration() {
+  isMaister = true;
+  localStorage.setItem("heartSoundMaister", "true");
+  maisterAnim = { frame: 0, maxFrames: 480 }; // Celebration duration
+  // Keep gameStarted true so draw runs during animation
+  // Stop input via gameOver flag
+  gameOver = true;
+  bgm.pause();
+  bgm.currentTime = 0;
+  // Celebration sound effect (bright fanfare)
+  playMaisterSound();
+  // Generate lots of success bursts
+  for (let burst = 0; burst < 6; burst++) {
+    setTimeout(() => {
+      for (let i = 0; i < 3; i++) {
+        createSuccessBurst(
+          80 + Math.random() * 240,
+          100 + Math.random() * 300
+        );
+      }
+    }, burst * 200);
+  }
+}
+
+function playMaisterSound() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+
+  const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+  notes.forEach((freq, i) => {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.18);
+    gain.gain.linearRampToValueAtTime(0.28, audioCtx.currentTime + i * 0.18 + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.18 + 0.5);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + i * 0.18);
+    osc.stop(audioCtx.currentTime + i * 0.18 + 0.5);
+  });
+}
+
+function drawMaisterCelebration() {
+  if (!maisterAnim) return;
+  const f = maisterAnim.frame;
+  const alpha = f < 30 ? f / 30 : (f > 150 ? 1 - (f - 150) / 30 : 1);
+
+  // Full-screen gold overlay
+  ctx.save();
+  ctx.globalAlpha = alpha * 0.18;
+  const grad = ctx.createRadialGradient(200, 300, 10, 200, 300, 350);
+  grad.addColorStop(0, "#ffd76b");
+  grad.addColorStop(1, "rgba(255,215,107,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // "MAISTER!" text
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const pulse = 1 + Math.sin(f * 0.08) * 0.20; // Meister animation text pulse (speed 0.08, scale 0.20)
+  ctx.font = `bold ${Math.round(34 * pulse)}px "Segoe UI",sans-serif`; // Meister animation text size
+  ctx.fillStyle = "#ffd76b";
+  ctx.shadowColor = "rgba(255,215,107,0.9)";
+  ctx.shadowBlur = 28;
+  ctx.fillText("🏆 MEISTER CERTIFIED 🏆", canvas.width / 2, canvas.height / 2 - 20);
+  ctx.font = `bold 22px "Segoe UI",sans-serif`;
+  ctx.fillStyle = "#fff";
+  ctx.shadowBlur = 10;
+  ctx.fillText("Heart Sound Maister!", canvas.width / 2, canvas.height / 2 + 36);
+  ctx.restore();
+}
+
+function updateMaisterAnim() {
+  if (!maisterAnim) return;
+  maisterAnim.frame++;
+  // Continue emitting particles
+  if (maisterAnim.frame % 12 === 0) {
+    createSuccessBurst(
+      60 + Math.random() * 280,
+      60 + Math.random() * 400
+    );
+  }
+  if (maisterAnim.frame >= maisterAnim.maxFrames) {
+    maisterAnim = null;
+    endGame();
+  }
+}
+
+function endGame() {
+  gameOver = true;
+  gameStarted = false;
+
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = 0.8;
+
+  savedScore = score;
+  savedLevelText = levelText;
+
+  if (score < 50) playGameOverSound();
+
+  spawnBlock(false);
+
+  updateControlButtons();
+  showStartOverlay("retry");
+}
+
+function spawnDiagnostic() {
+  diagnostics.push({
+    x: player.x,
+    y: player.y - 18,
+    vx: 0,
+    vy: -6.4,
+    radius: 14,
+    frame: 0,
+    state: "flying",
+    trail: []
+  });
+}
+
+function fireAction() {
+  if (!gameStarted || gameOver || !block) return;
+  if (block.state === "dying") return;
+  if (block.wrongFrame > 0 && block.wrongFrame <= block.wrongMaxFrames) return; // Cannot fire during wrong-answer reaction
+  if (player.shootAnim || diagnostics.some(d => d.state === "flying" || d.state === "launch")) return;
+  if (bgm.paused) bgm.play().catch(() => {});
+  player.shootAnim = { phase: "compress", frame: 0 };
+}
+
+function rotateLeft() {
+  if (!gameStarted || gameOver || !block) return;
+  if (block.state === "dying") return;
+  block.angleIndex = (block.angleIndex + 3) % 4;
+  labelAngleTo -= Math.PI / 2;
+}
+
+function rotateRight() {
+  if (!gameStarted || gameOver || !block) return;
+  if (block.state === "dying") return;
+  block.angleIndex = (block.angleIndex + 1) % 4;
+  labelAngleTo += Math.PI / 2;
+}
+
+document.addEventListener("keydown", e => {
+  // Start on Enter / Space at START screen
+  if (!gameStarted && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    startGame();
+    return;
+  }
+
+  // Restart on Enter at RETRY screen
+  if (gameOver && e.key === "Enter") {
+    e.preventDefault();
+    startGame();
+    return;
+  }
+
+  if (gameOver) return;
+
+  if (e.key === "ArrowLeft") rotateLeft();
+  if (e.key === "ArrowRight") rotateRight();
+
+  // Diagnose (Space)
+  if (e.key === " ") {
+    e.preventDefault();
+    fireAction();
+  }
+});
+
+let touchStartX = null, touchMoved = false;
+canvas.addEventListener("touchstart", e => {
+  if (!gameStarted || gameOver) return;
+  touchStartX = e.touches[0].clientX;
+  touchMoved = false;
+}, {passive:true});
+
+canvas.addEventListener("touchmove", e => {
+  if (touchStartX === null || !gameStarted || gameOver) return;
+  const dx = e.touches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 30) {
+    dx < 0 ? rotateRight() : rotateLeft(); // reversed direction
+    touchStartX = e.touches[0].clientX;
+    touchMoved = true;
+  }
+}, {passive:true});
+
+canvas.addEventListener("touchend", () => {
+  if (!gameStarted || gameOver) {
+    touchStartX = null;
+    return;
+  }
+  if (!touchMoved) fireAction();
+  touchStartX = null;
+}, {passive:true});
+
+function addPress(el, fn) {
+  el.addEventListener("touchstart", e => { e.preventDefault(); fn(); }, {passive:false});
+  el.addEventListener("click", fn);
+}
+addPress(document.getElementById("leftBtn"), rotateLeft);
+addPress(document.getElementById("rightBtn"), rotateRight);
+addPress(document.getElementById("fireBtn"), fireAction);
+
+// Extended BEAT_PATTERNS - mapped per audio source
+// beats: timing within one heartbeat cycle (0 to 1 ratio)
+// bpm: beats per minute of the audio source
+// strength: intensity of each beat
+// duration: beat duration in seconds
+const BEAT_PATTERNS = {
+  // Normal heart sound (apex) - S1 and S2
+  "apex.mp3": { 
+    beats: [0, 0.35], 
+    bpm: 72, 
+    strength: [1.0, 0.7],
+    duration: [0.08, 0.06]
+  },
+  // Normal heart sound (base) - S1 and S2
+  "base.mp3": { 
+    beats: [0, 0.35], 
+    bpm: 72, 
+    strength: [1.0, 0.7],
+    duration: [0.08, 0.06]
+  },
+  // S4 - extra sound just before S1
+  "S4.mp3": { 
+    beats: [0, 0.12, 0.45], 
+    bpm: 68, 
+    strength: [0.5, 1.0, 0.6],
+    duration: [0.05, 0.08, 0.06]
+  },
+  // S3 - extra sound just after S2
+  "S3.mp3": { 
+    beats: [0, 0.35, 0.48], 
+    bpm: 70, 
+    strength: [1.0, 0.7, 0.45],
+    duration: [0.08, 0.06, 0.05]
+  },
+  // Gallop - combined S3+S4
+  "gallop.mp3": { 
+    beats: [0, 0.12, 0.38, 0.52], 
+    bpm: 95, 
+    strength: [0.5, 1.0, 0.65, 0.4],
+    duration: [0.04, 0.07, 0.05, 0.04]
+  },
+  // Click - midsystolic click
+  "click.mp3": { 
+    beats: [0, 0.22, 0.42], 
+    bpm: 75, 
+    strength: [1.0, 0.6, 0.7],
+    duration: [0.08, 0.03, 0.06]
+  },
+  // Ejection sound - just after S1
+  "ej.mp3": { 
+    beats: [0, 0.08, 0.4], 
+    bpm: 72, 
+    strength: [1.0, 0.55, 0.7],
+    duration: [0.08, 0.04, 0.06]
+  },
+  // Accentuated pulmonary component of S2
+  "2P.mp3": { 
+    beats: [0, 0.36, 0.42], 
+    bpm: 74, 
+    strength: [1.0, 0.6, 0.85],
+    duration: [0.08, 0.05, 0.06]
+  },
+  // Systolic ejection murmur - crescendo-decrescendo
+  "SEM.mp3": { 
+    beats: [0, 0.42], 
+    bpm: 70, 
+    strength: [1.0, 0.7],
+    duration: [0.12, 0.06]
+  },
+  // Holosystolic regurgitant murmur
+  "HSM.mp3": { 
+    beats: [0, 0.4], 
+    bpm: 72, 
+    strength: [1.0, 0.75],
+    duration: [0.15, 0.06]
+  },
+  // To-and-fro murmur
+  "TAF.mp3": { 
+    beats: [0, 0.35], 
+    bpm: 68, 
+    strength: [1.0, 0.85],
+    duration: [0.12, 0.1]
+  },
+  // Continuous murmur
+  "CM.mp3": { 
+    beats: [0, 0.25, 0.5, 0.75], 
+    bpm: 65, 
+    strength: [0.9, 0.7, 0.85, 0.65],
+    duration: [0.1, 0.08, 0.1, 0.08]
+  },
+  // Late-systolic murmur
+  "LSM.mp3": { 
+    beats: [0, 0.28, 0.42], 
+    bpm: 72, 
+    strength: [1.0, 0.6, 0.7],
+    duration: [0.08, 0.08, 0.06]
+  },
+  // Pericardial friction rub - 3 components
+  "rub.mp3": { 
+    beats: [0, 0.2, 0.55], 
+    bpm: 75, 
+    strength: [1.0, 0.7, 0.6],
+    duration: [0.06, 0.05, 0.05]
+  },
+  // Diastolic murmur (HDM)
+  "HDM.mp3": { 
+    beats: [0, 0.40], 
+    bpm: 70, 
+    strength: [1.0, 0.75],
+    duration: [0.08, 0.18]
+  },
+  // Regurgitant murmur (early-systolic) - ESM
+  "ESM.mp3": { 
+    beats: [0, 0.30], 
+    bpm: 72, 
+    strength: [1.0, 0.70],
+    duration: [0.08, 0.10]
+  },
+  // Rumble - diastolic rumble
+  "rumble.mp3": { 
+    beats: [0, 0.38], 
+    bpm: 68, 
+    strength: [1.0, 0.8],
+    duration: [0.08, 0.15]
+  }
+};
+
+// Default pattern
+const DEFAULT_BEAT_PATTERN = { 
+  beats: [0, 0.4], 
+  bpm: 72, 
+  strength: [1.0, 0.7],
+  duration: [0.08, 0.06]
+};
+
+function getBeat() {
+  if (!beatEnabled) return 0;
+  
+  const soundFile = block ? block.type.sound : "apex.mp3";
+  const p = BEAT_PATTERNS[soundFile] || DEFAULT_BEAT_PATTERN;
+  
+  // Use audio current time for more accurate sync
+  const currentTime = bgm.currentTime;
+  const cycleDuration = 60 / p.bpm; // Duration of one heartbeat (seconds)
+  const phase = (currentTime % cycleDuration) / cycleDuration; // Phase from 0 to 1
+  
+  let beat = 0;
+  for (let i = 0; i < p.beats.length; i++) {
+    const beatTime = p.beats[i];
+    const dur = p.duration ? p.duration[i] : 0.08;
+    const durPhase = dur / cycleDuration; // Convert duration to phase
+    
+    // Calculate phase difference (accounting for loop)
+    let d = phase - beatTime;
+    if (d < -0.5) d += 1;
+    if (d > 0.5) d -= 1;
+    
+    // Check if within beat window
+    if (d >= 0 && d < durPhase) {
+      // Smooth attack and decay
+      const progress = d / durPhase;
+      const envelope = Math.sin(progress * Math.PI); // Smooth 0→1→0 envelope
+      beat = Math.max(beat, p.strength[i] * envelope * 0.25);
+    }
+  }
+  
+  return beat;
+}
+
+function createShatter(x, y) {
+  for (let i = 0; i < 14; i++) {
+    const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.5;
+    const speed = 1.6 + Math.random() * 2.5;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.3,
+      life: 22 + Math.random() * 10,
+      maxLife: 32,
+      type: "shatter",
+      size: 2 + Math.random() * 4
+    });
+  }
+}
+
+function createSuccessBurst(x, y) {
+  for (let i = 0; i < 16; i++) {
+    const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.4;
+    const speed = 1.2 + Math.random() * 2.2;
+    successBursts.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      life: 28 + Math.random() * 12,
+      maxLife: 40,
+      size: 2 + Math.random() * 3
+    });
+  }
+}
+
+// Particles for when the heart disappears
+function createDyingParticles(x, y) {
+  // Shattering particles
+  for (let i = 0; i < 20; i++) {
+    const angle = (Math.PI * 2 * i) / 20 + Math.random() * 0.3;
+    const speed = 2 + Math.random() * 3;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      life: 30 + Math.random() * 15,
+      maxLife: 45,
+      type: "dying",
+      size: 3 + Math.random() * 5,
+      color: Math.random() > 0.5 ? "rgba(255, 100, 120," : "rgba(255, 180, 200,"
+    });
+  }
+  
+  // Expanding rings from center
+  for (let i = 0; i < 3; i++) {
+    particles.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: 25 - i * 5,
+      maxLife: 25 - i * 5,
+      type: "ring",
+      size: 10 + i * 15,
+      delay: i * 5
+    });
+  }
+}
+
+function playWrongSound() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(260, now);
+  osc.frequency.exponentialRampToValueAtTime(160, now + 0.28);
+  gain.gain.setValueAtTime(0.09, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + 0.32);
+}
+
+function playCorrectSound() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  const now = audioCtx.currentTime;
+  [520, 780].forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, now + i * 0.10);
+    gain.gain.linearRampToValueAtTime(0.13, now + i * 0.10 + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.10 + 0.18);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + i * 0.10);
+    osc.stop(now + i * 0.10 + 0.20);
+  });
+}
+
+function processHit(diagnostic, isCorrect) {
+  diagnostic.state = isCorrect ? "fused" : "shatter";
+  if (isCorrect) {
+    diagnostic.x = block.x;
+    diagnostic.y = block.y + block.size * 0.25;
+    block.y = Math.max(block.baseY, block.y - 27); // Ascend on correct answer
+    block.state = "success";
+    block.hitFrame = 0;
+    block.fuseX = diagnostic.x;
+    block.fuseY = diagnostic.y;
+    block.glow = 1;
+    if (!practiceMode) {
+      score += 1;
+      updateLevel();
+      updateScoreHUD();
+    }
+    createSuccessBurst(block.x, block.y + block.size * 0.18);
+    playCorrectSound();
+  } else {
+    createShatter(diagnostic.x, diagnostic.y);
+    // Wrong: lower heart slightly + start shake reaction
+    block.y = Math.min(block.y + 18, GAME_OVER_LINE_Y - block.size / 2 - 2);
+    block.wrongFrame = 1;
+    block.wrongMaxFrames = 28;
+    block.wrongShake = 0;
+    playWrongSound();
+  }
+}
+
+function updateShootAnim() {
+  if (!player.shootAnim) {
+    player.shootScale += (1 - player.shootScale) * 0.28;
+    return;
+  }
+
+  const anim = player.shootAnim;
+  anim.frame++;
+
+  if (anim.phase === "compress") {
+    player.shootScale = 1 - Math.min(anim.frame / 7, 1) * 0.18;
+    if (anim.frame >= 7) {
+      spawnDiagnostic();
+      anim.phase = "release";
+      anim.frame = 0;
+    }
+  } else {
+    player.shootScale = 0.82 + Math.min(anim.frame / 7, 1) * 0.18;
+    if (anim.frame >= 7) {
+      player.shootScale = 1;
+      player.shootAnim = null;
+    }
+  }
+}
+
+function updateDiagnostics() {
+  diagnostics.forEach(d => {
+    d.frame++;
+    if (d.state === "flying") {
+      d.trail.push({ x: d.x, y: d.y, age: 0 });
+      if (d.trail.length > 6) d.trail.shift();
+      d.y += d.vy;
+      d.x += d.vx;
+      d.trail.forEach(t => t.age++);
+    }
+  });
+
+  diagnostics = diagnostics.filter(d => d.state !== "done" && d.y > -60);
+}
+
+function updateParticles() {
+  particles.forEach(p => {
+    if (p.type === "ring") {
+      if (p.delay > 0) {
+        p.delay--;
+      } else {
+        p.size += 4;
+        p.life -= 1;
+      }
+    } else {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.06;
+      p.life -= 1;
+    }
+  });
+  particles = particles.filter(p => p.life > 0);
+
+  successBursts.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.04;
+    p.life -= 1;
+  });
+  successBursts = successBursts.filter(p => p.life > 0);
+}
+
+function drawBlock() {
+  if (!block) return;
+  
+  // Decide whether to use Meister heart image
+  const useHeartImg = isMaister
+    ? (heartMaisterLoaded ? heartMaisterImg : (heartLoaded ? heartImg : null))
+    : (heartLoaded ? heartImg : null);
+  if (!useHeartImg) return;
+  
+  // Special rendering for dying state
+  if (block.state === "dying") {
+    const progress = block.dyingFrame / block.dyingMaxFrames;
+    const scale = block.dyingScale;
+    const alpha = block.dyingAlpha;
+    
+    const beatScale = beatEnabled ? 1 + getBeat() * (1 - progress) : 1; // Beat gradually weakens
+    const size = block.size * beatScale * scale;
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    
+    // Red warning glow
+    const glowIntensity = 0.5 + Math.sin(block.dyingFrame * 0.4) * 0.3;
+    const glowR = size * (0.8 + progress * 0.5);
+    const glow = ctx.createRadialGradient(block.x, block.y, 5, block.x, block.y, glowR);
+    glow.addColorStop(0, `rgba(255, 80, 100, ${glowIntensity * alpha})`);
+    glow.addColorStop(0.5, `rgba(255, 50, 80, ${glowIntensity * 0.5 * alpha})`);
+    glow.addColorStop(1, "rgba(255, 50, 80, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(block.x, block.y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw heart (shrinking with rotation)
+    ctx.translate(block.x, block.y);
+    ctx.rotate(progress * Math.PI * 2); // Rotate
+    ctx.drawImage(useHeartImg, -size / 2, -size / 2, size, size);
+    
+    ctx.restore();
+    return;
+  }
+  
+  let beatScale = 1;
+
+if (gameStarted) {
+  beatScale = beatEnabled ? 1 + getBeat() : 1;
+} else {
+  beatScale = beatEnabled ? 1 + Math.sin(Date.now() * 0.002) * 0.08 : 1;
+}
+  const successBoost = block.state === "success" ? 1 + Math.sin(block.hitFrame * 0.35) * 0.05 : 1;
+  const size = block.size * beatScale * successBoost;
+
+  if (block.state === "success") {
+    const glowR = block.size * (0.72 + Math.sin(block.hitFrame * 0.28) * 0.08);
+    const glow = ctx.createRadialGradient(block.x, block.y, 5, block.x, block.y, glowR);
+    glow.addColorStop(0, "rgba(124,247,255,0.32)");
+    glow.addColorStop(0.5, "rgba(93,139,255,0.18)");
+    glow.addColorStop(1, "rgba(93,139,255,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(block.x, block.y, glowR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.drawImage(useHeartImg, block.x - size / 2 + (block.wrongShake || 0), block.y - size / 2, size, size);
+
+  // Wrong answer reaction: red glow
+  if (block.wrongFrame > 0 && block.wrongFrame <= block.wrongMaxFrames) {
+    const wp = block.wrongFrame / block.wrongMaxFrames;
+    const wAlpha = (1 - wp) * 0.55;
+    const wR = size * 0.7;
+    const wGlow = ctx.createRadialGradient(block.x, block.y, 4, block.x, block.y, wR);
+    wGlow.addColorStop(0, `rgba(255,80,80,${wAlpha})`);
+    wGlow.addColorStop(1, "rgba(255,80,80,0)");
+    ctx.fillStyle = wGlow;
+    ctx.beginPath();
+    ctx.arc(block.x, block.y, wR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (block.state === "success") {
+    const pulseR = 14 + Math.sin(block.hitFrame * 0.34) * 3;
+    const fusion = ctx.createRadialGradient(block.fuseX, block.fuseY, 2, block.fuseX, block.fuseY, pulseR);
+    fusion.addColorStop(0, "rgba(255,255,255,0.95)");
+    fusion.addColorStop(0.38, "rgba(124,247,255,0.95)");
+    fusion.addColorStop(1, "rgba(93,139,255,0)");
+    ctx.fillStyle = fusion;
+    ctx.beginPath();
+    ctx.arc(block.fuseX, block.fuseY, pulseR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawLabels() {
+  if (!block || !gameStarted || gameOver) return;
+  if (block.state === "dying") return; // Do not show labels in dying state
+  
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const dirs = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+
+  for (let i = 0; i < 4; i++) {
+    const label = block.type.labels[i];
+    ctx.font = "14px Arial";
+    const tw = ctx.measureText(label).width;
+
+    const isV = ((i + block.angleIndex) % 4 === 0 || (i + block.angleIndex) % 4 === 2);
+    const dist = isV ? block.size / 2 + 14 : block.size / 2 + tw / 2 + 6;
+
+    const bx = dirs[i].x * dist;
+    const by = dirs[i].y * dist;
+    const a = labelAngle;
+    const isBottom = ((i + block.angleIndex) % 4 === 2);
+
+    if (isBottom) {
+      ctx.fillStyle = "#ffe87f";
+      ctx.font = "bold 18px Arial";
+    } else {
+      ctx.fillStyle = "rgba(255,235,120,0.46)";
+      ctx.font = "14px Arial";
+    }
+
+    ctx.fillText(
+      label,
+      block.x + bx * Math.cos(a) - by * Math.sin(a),
+      block.y + bx * Math.sin(a) + by * Math.cos(a)
+    );
+  }
+}
+
+function drawDiagnostics() {
+  diagnostics.forEach(d => {
+    if (d.state !== "flying") return;
+
+    d.trail.forEach((t, i) => {
+      const alpha = 0.12 + i * 0.1;
+      ctx.strokeStyle = `rgba(124,247,255,${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, 5 + i * 1.2, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    const r = d.radius + Math.sin(d.frame * 0.5) * 1.5;
+    const g = ctx.createRadialGradient(d.x, d.y, 2, d.x, d.y, r + 4);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.42, "rgba(124,247,255,0.9)");
+    g.addColorStop(1, "rgba(93,139,255,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, r + 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(255,255,255,0.78)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(124,247,255,0.9)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, Math.max(5, r - 5), 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    const alpha = Math.max(p.life / p.maxLife, 0);
+    
+    if (p.type === "ring") {
+      if (p.delay <= 0) {
+        ctx.strokeStyle = `rgba(255, 100, 120, ${alpha * 0.6})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (p.type === "dying") {
+      ctx.fillStyle = p.color + alpha + ")";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = `rgba(255, 160, 190, ${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - p.size);
+      ctx.lineTo(p.x + p.size, p.y);
+      ctx.lineTo(p.x, p.y + p.size);
+      ctx.lineTo(p.x - p.size, p.y);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+
+  successBursts.forEach(p => {
+    const alpha = Math.max(p.life / p.maxLife, 0);
+    ctx.strokeStyle = `rgba(124,247,255,${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function drawDangerLine() {
+  if (practiceMode) return;
+  const grad = ctx.createLinearGradient(
+    76,
+    GAME_OVER_LINE_Y,
+    canvas.width - 76,
+    GAME_OVER_LINE_Y
+  );
+
+  grad.addColorStop(0, 'rgba(255, 122, 159, 0.08)');
+  grad.addColorStop(0.18, 'rgba(255, 210, 120, 0.92)');
+  grad.addColorStop(0.5, 'rgba(124, 247, 255, 0.96)');
+  grad.addColorStop(0.82, 'rgba(255, 210, 120, 0.92)');
+  grad.addColorStop(1, 'rgba(255, 122, 159, 0.08)');
+
+  ctx.save();
+
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2.6;
+  ctx.shadowColor = 'rgba(124, 247, 255, 0.45)';
+  ctx.shadowBlur = 12;
+
+  ctx.beginPath();
+
+  for (let x = 76; x <= canvas.width - 76; x += 4) {
+    const y =
+      GAME_OVER_LINE_Y +
+      Math.sin(x * 0.035 + dangerLinePhase * 0.08) * 5;
+
+    if (x === 76) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+
+  ctx.stroke();
+}
+function drawHUD() {}
+
+function drawPlayer() {
+  if (!stethLoaded) return;
+
+  const idleFloat =
+    Math.sin(beatTick * 0.055) * 3.6 +
+    Math.sin(beatTick * 0.022 + 1.4) * 1.4;
+
+  const idleTilt = Math.sin(beatTick * 0.038) * 0.04;
+
+  const h =
+    92 *
+    player.shootScale *
+    (1 + Math.sin(beatTick * 0.05) * 0.012);
+
+  const w = stethImg.width * (h / stethImg.height);
+
+  const offsetY =
+    (1 - player.shootScale) * 14 + idleFloat;
+
+  ctx.save();
+  ctx.translate(player.x, player.y + offsetY);
+  ctx.rotate(idleTilt);
+
+  // Blue aura
+  ctx.shadowColor = "rgba(80,180,255,0.75)";
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.drawImage(stethImg, -w / 2, -h / 2, w, h);
+
+  // Draw again for sharp outline
+  ctx.shadowBlur = 0;
+  ctx.drawImage(stethImg, -w / 2, -h / 2, w, h);
+
+  ctx.restore();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawSpaceBackground();
+  drawBlock();
+  drawLabels();
+  drawDiagnostics();
+  drawParticles();
+  drawDangerLine();
+  drawPlayer();
+  drawHUD();
+  drawMaisterCelebration();
+}
+
+function updateBlock() {
+  if (!block) return;
+
+  // Practice mode: heart fixed at center, no falling
+  if (practiceMode) {
+    block.x = GAME_W / 2;
+    block.y = GAME_H / 2 - 30;
+    block.baseY = block.y;
+
+    // Update dying state (in practice mode, respawn)
+    if (block.state === "dying") {
+      block.dyingFrame++;
+      const progress = block.dyingFrame / block.dyingMaxFrames;
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      block.dyingScale = 1 - easeOutQuart * 0.9;
+      block.dyingAlpha = 1 - easeOutQuart;
+      if (block.dyingFrame === 15) createDyingParticles(block.x, block.y);
+      if (block.dyingFrame >= block.dyingMaxFrames) {
+        // Practice mode: advance to next question (no game over)
+        nextBlockType(true);
+        block.x = GAME_W / 2;
+        block.y = GAME_H / 2 - 30;
+      }
+      return;
+    }
+
+    // Wrong answer reaction
+    if (block.wrongFrame > 0 && block.wrongFrame <= block.wrongMaxFrames) {
+      block.wrongFrame++;
+      const p = block.wrongFrame / block.wrongMaxFrames;
+      block.wrongShake = Math.sin(p * Math.PI * 5) * (1 - p) * 9;
+      if (block.wrongFrame > block.wrongMaxFrames) {
+        block.wrongFrame = 0;
+        block.wrongShake = 0;
+      }
+    }
+
+    if (block.state === "success") {
+      block.hitFrame++;
+      if (block.hitFrame > 24) nextBlockType(true);
+      return;
+    }
+    return;
+  }
+
+  // Update dying state
+  if (block.state === "dying") {
+    block.dyingFrame++;
+    const progress = block.dyingFrame / block.dyingMaxFrames;
+    
+    // Smooth scaling with easing function
+    const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+    block.dyingScale = 1 - easeOutQuart * 0.9; // Shrink down to 10%
+    block.dyingAlpha = 1 - easeOutQuart; // Fade out
+    
+    // Add particles mid-animation
+    if (block.dyingFrame === 15) {
+      createDyingParticles(block.x, block.y);
+    }
+    
+    // Animation complete: trigger game over
+    if (block.dyingFrame >= block.dyingMaxFrames) {
+      endGame();
+    }
+    return;
+  }
+
+  // Update wrong answer reaction
+  if (block.wrongFrame > 0 && block.wrongFrame <= block.wrongMaxFrames) {
+    block.wrongFrame++;
+    const p = block.wrongFrame / block.wrongMaxFrames;
+    // Shake left and right (damped sine wave)
+    block.wrongShake = Math.sin(p * Math.PI * 5) * (1 - p) * 9;
+    if (block.wrongFrame > block.wrongMaxFrames) {
+      block.wrongFrame = 0;
+      block.wrongShake = 0;
+    }
+  }
+
+  if (block.state === "success") {
+    block.hitFrame++;
+    if (block.y - 3.8 >= block.baseY) {
+      block.y -= 3.8;
+      block.fuseY -= 3.8;
+    }
+    if (block.hitFrame > 24) {
+      nextBlockType(true);
+    }
+    return;
+  }
+
+  block.speed = 0.10 + score * 0.015; // Fall speed acceleration: 0.015
+  block.y += block.speed;
+
+  const heartBottom = block.y + block.size / 2;
+  if (heartBottom >= GAME_OVER_LINE_Y) {
+    // Transition to dying state instead of instant game over
+    block.state = "dying";
+    block.dyingFrame = 0;
+    block.dyingScale = 1;
+    block.dyingAlpha = 1;
+    
+    // Play explosion sound effect
+    playExplosionSound();
+
+    // Fade out BGM
+    if (fadeOutTimer) clearInterval(fadeOutTimer);
+    fadeOutTimer = setInterval(() => {
+      if (bgm.volume > 0.1) {
+        bgm.volume -= 0.1;
+      } else {
+        bgm.volume = 0;
+        bgm.pause();
+        clearInterval(fadeOutTimer);
+        fadeOutTimer = null;
+      }
+    }, 50);
+  }
+}
+
+function checkDiagnosticHits() {
+  if (!block || block.state === "success" || block.state === "dying") return;
+
+  for (let i = diagnostics.length - 1; i >= 0; i--) {
+    const d = diagnostics[i];
+    if (d.state !== "flying") continue;
+
+    const hitX = d.x > block.x - block.size / 2 && d.x < block.x + block.size / 2;
+    const hitY = d.y >= block.y - block.size / 2 && d.y <= block.y + block.size / 2;
+
+    if (hitX && hitY) {
+      const label = block.type.labels[(2 - block.angleIndex + 4) % 4];
+      const correct = label === block.type.correct;
+      processHit(d, correct);
+      if (!correct) d.state = "done";
+      if (correct) {
+        d.state = "done";
+      }
+      break;
+    }
+  }
+}
+
+function update() {
+  if (!gameStarted || gameOver || !block) return;
+
+  if (!practiceMode && score >= 50 && !maisterAnim) { // Meister threshold: 50 points
+    startMaisterCelebration();
+    return;
+  }
+
+  beatTick++;
+  labelAngle += (labelAngleTo - labelAngle) * 0.18;
+  updateShootAnim();
+  updateDiagnostics();
+  updateParticles();
+  updateStars();
+  updateBlock();
+  checkDiagnosticHits();
+  updateLevel();
+  updateScoreHUD();
+}
+
+function loop() {
+  beatTick++;
+  dangerLinePhase += 0.15;
+  labelAngle += (labelAngleTo - labelAngle) * (gameStarted ? 0.18 : 0.08);
+
+  if (maisterAnim) {
+    // Meister celebration in progress
+    updateMaisterAnim();
+    updateParticles();
+    updateStars();
+  } else if (gameStarted && !gameOver) {
+    update();
+  } else {
+    updateShootAnim();
+    updateDiagnostics();
+    updateParticles();
+    updateStars();
+  }
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+updateControlsGuide();
+updateLevel();
+updateScoreHUD();
+updateBeatBtn();
+updateControlButtons();
+resizeCanvas();
+initStars();
+spawnBlock(false);
+showStartOverlay("start");
+loop();
+
+// Keep game logic running while tab is inactive
+let hiddenUpdateTimer = null;
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    // Tab hidden: keep game logic running via setInterval (~60fps)
+    if (!hiddenUpdateTimer) {
+      hiddenUpdateTimer = setInterval(() => {
+        if (!gameStarted || gameOver) {
+          clearInterval(hiddenUpdateTimer);
+          hiddenUpdateTimer = null;
+          return;
+        }
+        beatTick++;
+        dangerLinePhase += 0.15;
+        if (maisterAnim) {
+          updateMaisterAnim();
+          updateParticles();
+          updateStars();
+        } else {
+          update();
+        }
+      }, 1000 / 60);
+    }
+  } else {
+    // Tab restored: stop setInterval, return to rAF
+    if (hiddenUpdateTimer) {
+      clearInterval(hiddenUpdateTimer);
+      hiddenUpdateTimer = null;
+    }
+  }
+});
+</script>
+</body>
+</html>
