@@ -945,9 +945,33 @@ function playGameOverSound() {
   osc.stop(audioCtx.currentTime + 1.2);
 }
 
-startBtn.addEventListener("click", startGame);
-practiceBtn.addEventListener("click", startPracticeMode);
-practiceRetryBtn.addEventListener("click", () => {
+// iOS/Android AudioContext unlock: must be called inside a user gesture handler
+async function unlockAudio() {
+  // Unlock HTMLAudioElement (bgm)
+  const prevVol = bgm.volume;
+  bgm.volume = 0;
+  try { await bgm.play(); } catch(e) {}
+  bgm.pause();
+  bgm.currentTime = 0;
+  bgm.volume = prevVol;
+
+  // Unlock Web Audio API (audioCtx)
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") {
+    try { await audioCtx.resume(); } catch(e) {}
+  }
+}
+
+startBtn.addEventListener("click", async () => {
+  await unlockAudio();
+  startGame();
+});
+practiceBtn.addEventListener("click", async () => {
+  await unlockAudio();
+  startPracticeMode();
+});
+practiceRetryBtn.addEventListener("click", async () => {
+  await unlockAudio();
   startGame();
 });
 practiceModeBar.addEventListener("click", () => {
@@ -969,7 +993,10 @@ practiceModeBar.addEventListener("click", () => {
   showStartOverlay("retry"); // Call with practiceMode=true to use saved values
   practiceMode = false;
 });
+// BEAT toggle: use flag to prevent double-fire (touchstart + click both fire on mobile)
+let _beatTouchHandled = false;
 beatBtn.addEventListener("click", () => {
+  if (_beatTouchHandled) { _beatTouchHandled = false; return; }
   beatEnabled = !beatEnabled;
   updateBeatBtn();
 });
@@ -1020,6 +1047,7 @@ function playExplosionSound() {
 // Allow toggle via touch on start/game-over screen too
 beatBtn.addEventListener("touchstart", (e) => {
   e.preventDefault();
+  _beatTouchHandled = true;
   beatEnabled = !beatEnabled;
   updateBeatBtn();
 }, { passive: false });
@@ -1462,8 +1490,15 @@ function getBeat() {
   const soundFile = block ? block.type.sound : "apex.mp3";
   const p = BEAT_PATTERNS[soundFile] || DEFAULT_BEAT_PATTERN;
   
-  // Use audio current time for more accurate sync
-  const currentTime = bgm.currentTime;
+  // When bgm is paused (e.g. audio not yet unlocked on mobile), fall back to
+  // wall-clock time so the heartbeat animation always runs independently of audio.
+  let currentTime;
+  if (!bgm.paused && bgm.currentTime > 0) {
+    currentTime = bgm.currentTime;
+  } else {
+    currentTime = (Date.now() / 1000) % 1000; // wall-clock fallback
+  }
+
   const cycleDuration = 60 / p.bpm; // Duration of one heartbeat (seconds)
   const phase = (currentTime % cycleDuration) / cycleDuration; // Phase from 0 to 1
   
